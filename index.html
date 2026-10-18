@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>霧谷春町の14日間 - 思わせぶりな通知と進路調査票</title>
+<style>
+  body {
+    background-color: #0b0d12;
+    color: #c9d1d9;
+    font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    margin: 0;
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 92vh;
+  }
+  #game-container {
+    background-color: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 680px;
+    padding: 22px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.8);
+    box-sizing: border-box;
+    position: relative;
+  }
+  h1 {
+    font-size: 1.2rem;
+    color: #8b949e;
+    margin-top: 0;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #21262d;
+    padding-bottom: 10px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  #header-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    color: #58a6ff;
+  }
+  .stat-row {
+    margin-bottom: 10px;
+  }
+  .stat-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    margin-bottom: 4px;
+  }
+  .bar-bg {
+    background-color: #21262d;
+    height: 14px;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  #mental-bar {
+    background-color: #3fb950;
+    height: 100%;
+    width: 65%;
+    transition: width 0.3s ease, background-color 0.3s ease;
+  }
+  #pride-bar {
+    background-color: #a371f7;
+    height: 100%;
+    width: 50%;
+    transition: width 0.3s ease;
+  }
+  #buff-list {
+    font-size: 0.8rem;
+    color: #79c0ff;
+    background-color: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-bottom: 12px;
+    min-height: 20px;
+  }
+  #log-box {
+    background-color: #090c10;
+    border: 1px solid #21262d;
+    border-radius: 6px;
+    padding: 14px;
+    height: 260px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    line-height: 1.7;
+    font-size: 0.92rem;
+  }
+  .log-entry {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #21262d;
+  }
+  .log-system {
+    color: #8b949e;
+    font-size: 0.84rem;
+  }
+  .log-damage {
+    color: #ff7b72;
+  }
+  .log-heal {
+    color: #7ee787;
+  }
+  .log-event {
+    color: #d2a8ff;
+    background-color: rgba(163, 113, 247, 0.12);
+    padding: 10px;
+    border-left: 3px solid #a371f7;
+    border-radius: 4px;
+  }
+  .log-critical {
+    color: #ffa198;
+    background-color: rgba(248, 81, 73, 0.15);
+    padding: 12px;
+    border-left: 4px solid #f85149;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  #commands {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  button.cmd-btn {
+    background-color: #21262d;
+    color: #c9d1d9;
+    border: 1px solid #363b42;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.92rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  button.cmd-btn:hover:not(:disabled) {
+    background-color: #30363d;
+    border-color: #8b949e;
+  }
+  button.cmd-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .cmd-desc {
+    display: block;
+    font-size: 0.76rem;
+    color: #8b949e;
+    margin-top: 3px;
+  }
+  #buff-modal {
+    display: none;
+    background-color: #161b22;
+    border: 2px solid #58a6ff;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  #buff-modal h2 {
+    font-size: 1rem;
+    color: #58a6ff;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+  #buff-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #restart-btn {
+    background-color: #238636;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 14px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    display: none;
+    text-align: center;
+    font-weight: bold;
+  }
+  #restart-btn:hover {
+    background-color: #2ea043;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <h1>霧谷春町の14日間</h1>
+  
+  <div id="header-info">
+    <span id="day-display">1日目：昼</span>
+    <span id="turn-display">残り28ターン</span>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-label">
+      <span>メンタル（0で引きこもり・中卒確定）</span>
+      <span id="mental-val">65 / 100</span>
+    </div>
+    <div class="bar-bg">
+      <div id="mental-bar"></div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-label">
+      <span>プライド（低いと健康的行動が選択不可）</span>
+      <span id="pride-val">50 / 100</span>
+    </div>
+    <div class="bar-bg">
+      <div id="pride-bar"></div>
+    </div>
+  </div>
+
+  <div id="buff-list">獲得した防衛機制（バフ）：なし</div>
+
+  <div id="log-box"></div>
+
+  <div id="buff-modal">
+    <h2 id="buff-title">3日経過：歪んだ自己防衛機制の獲得（1つ選択）</h2>
+    <div id="buff-options"></div>
+  </div>
+
+  <div id="commands">
+    <button class="cmd-btn" id="btn-science" onclick="takeAction('science')">
+      科学的なストレス解消法（散歩・筋トレ）
+      <span class="cmd-desc" id="desc-science">【要プライド20】確実にメンタル+20 / 冷笑している行動をとるためプライド-20</span>
+    </button>
+    <button class="cmd-btn" id="btn-pol" onclick="takeAction('politics')">
+      Xの本垢で政治・社会批判ポスト
+      <span class="cmd-desc" id="desc-pol">優越感でプライド+25 / 40%で反論・プチ炎上してメンタル-12</span>
+    </button>
+    <button class="cmd-btn" id="btn-ura" onclick="takeAction('ura')">
+      Xの裏垢で斜に構えた病みポスト
+      <span class="cmd-desc" id="desc-ura">メンタル+10、プライド-5 / たまにフォロワーに構ってもらえて大回復</span>
+    </button>
+    <button class="cmd-btn" id="btn-cafe" onclick="takeAction('cafe')">
+      Discord「春カフェ」でふにゃおす通話
+      <span class="cmd-desc" id="desc-cafe">【要プライド10】70%でメンタル+16、プライド-10 / 30%で過疎っておりメンタル-10</span>
+    </button>
+    <button class="cmd-btn" id="btn-m" onclick="takeAction('m_call')">
+      Mに連絡して寝落ち通話をねだる
+      <span class="cmd-desc" id="desc-m">【大博打】思わせぶりなMに賭ける。成功でメンタル+45 / 失敗でメンタル-25（連続使用は確率激減）</span>
+    </button>
+  </div>
+
+  <button id="restart-btn" onclick="initGame()">もう一度14日間をやり直す</button>
+</div>
+
+<script>
+  let day = 1;
+  let isNight = false;
+  let mental = 65;
+  let pride = 50;
+  let usedMLastTurn = false;
+  let mRescueUsed = false;
+  let isGameOver = false;
+  let activeBuffs = [];
+
+  const buffData = {
+    3: [
+      { id: "pol_up", name: "先鋭化する政治思想", desc: "本垢での社会批判のプライド回復+10、ただし炎上確率+10%" },
+      { id: "funya_mask", name: "ふにゃおすの仮面", desc: "春カフェ通話のメンタル回復+6、過疎っている確率が大幅に低下" },
+      { id: "m_ringtone", name: "M専用の特別通知音", desc: "Mへの連絡の成功率+10%、ただしスマホを見張るため毎ターンの自然減少+1" }
+    ],
+    6: [
+      { id: "debate_high", name: "論破による脳内麻薬", desc: "本垢で炎上した際、メンタルダメージを受ける代わりにプライドがさらに+15される" },
+      { id: "cynical_joke", name: "自虐ネタの洗練", desc: "裏垢での病みポストで構ってもらえる大回復の確率が2倍になり、プライド消費が0になる" },
+      { id: "ironic_body", name: "皮肉屋の肉体改造", desc: "科学的ストレス解消法（散歩・筋トレ）の必要プライドと消費量が20から12に減る" }
+    ],
+    9: [
+      { id: "cafe_dictator", name: "春カフェの独裁者", desc: "異論を唱えるメンバーをBANしたことで春カフェ通話が100%成功するが、プライド消費が15になる" },
+      { id: "menhera_shield", name: "予防線のメンヘラ", desc: "「どうせMは俺に興味ない」と言い聞かせ、Mへの連絡失敗時のメンタル減少を25から14に軽減" },
+      { id: "bluelight_addict", name: "ブルーライト中毒", desc: "昼夜逆転に適応し、夜の自然減少が3減る代わりに昼の自然減少が1増える" }
+    ],
+    12: [
+      { id: "blame_society", name: "全部社会のせい", desc: "自分の生きづらさをすべて社会構造のせいにし、毎ターン終了時にプライドが自動で+8される" },
+      { id: "only_m", name: "Mへの盲目的執着", desc: "Mへの連絡の成功率+20%、ただし科学的ストレス解消法のメンタル回復量が12に下がる" },
+      { id: "numb_heart", name: "虚無の防衛壁", desc: "心を麻痺させ、突発・強制イベントで受けるメンタルダメージを軽減する" }
+    ]
+  };
+
+  function hasBuff(id) {
+    return activeBuffs.indexOf(id) !== -1;
+  }
+
+  function getRandom100() {
+    let str = Math.random().toString().slice(2, 4);
+    if (str.length === 0) return 0;
+    if (str.length === 1) str = str + "0";
+    return parseInt(str, 10);
+  }
+
+  function clamp(val, min, max) {
+    if (val < min) return min;
+    if (val > max) return max;
+    return val;
+  }
+
+  function addLog(text, type) {
+    const box = document.getElementById("log-box");
+    const entry = document.createElement("div");
+    entry.className = "log-entry";
+    if (type === "system") entry.className += " log-system";
+    if (type === "damage") entry.className += " log-damage";
+    if (type === "heal") entry.className += " log-heal";
+    if (type === "event") entry.className += " log-event";
+    if (type === "critical") entry.className += " log-critical";
+    entry.innerHTML = text;
+    box.appendChild(entry);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function updateUI() {
+    const timeStr = isNight ? "夜" : "昼";
+    const remaining = (14 - day) + (14 - day) + (isNight ? 1 : 2);
+    document.getElementById("day-display").textContent = day + "日目：" + timeStr;
+    document.getElementById("turn-display").textContent = "残り" + remaining + "ターン";
+
+    document.getElementById("mental-val").textContent = mental + " / 100";
+    document.getElementById("pride-val").textContent = pride + " / 100";
+
+    const mBar = document.getElementById("mental-bar");
+    mBar.style.width = mental + "%";
+    if (mental <= 25) {
+      mBar.style.backgroundColor = "#f85149";
+    } else if (mental <= 50) {
+      mBar.style.backgroundColor = "#d29922";
+    } else {
+      mBar.style.backgroundColor = "#3fb950";
+    }
+
+    const pBar = document.getElementById("pride-bar");
+    pBar.style.width = pride + "%";
+
+    let sciCost = hasBuff("ironic_body") ? 12 : 20;
+    let sciHeal = hasBuff("only_m") ? 12 : 20;
+    let cafeCost = hasBuff("cafe_dictator") ? 15 : 10;
+
+    document.getElementById("desc-science").textContent = "【要プライド" + sciCost + "】確実にメンタル+" + sciHeal + " / 冷笑している行動をとるためプライド-" + sciCost;
+    document.getElementById("desc-cafe").textContent = "【要プライド" + cafeCost + "】ふにゃおすムーブで甘える。プライド-" + cafeCost;
+
+    document.getElementById("btn-science").disabled = (pride < sciCost || isGameOver);
+    document.getElementById("btn-cafe").disabled = (pride < cafeCost || isGameOver);
+    document.getElementById("btn-pol").disabled = isGameOver;
+    document.getElementById("btn-ura").disabled = isGameOver;
+    document.getElementById("btn-m").disabled = isGameOver;
+  }
+
+  function initGame() {
+    day = 1;
+    isNight = false;
+    mental = 65;
+    pride = 50;
+    usedMLastTurn = false;
+    mRescueUsed = false;
+    isGameOver = false;
+    activeBuffs = [];
+
+    document.getElementById("log-box").innerHTML = "";
+    document.getElementById("buff-list").textContent = "獲得した防衛機制（バフ）：なし";
+    document.getElementById("buff-modal").style.display = "none";
+    document.getElementById("commands").style.display = "flex";
+    document.getElementById("restart-btn").style.display = "none";
+
+    addLog("昼夜逆転した薄暗い部屋。スマホのブルーライトだけが顔を照らしている。<br>Xの本垢では排外主義や全体主義への批判を流し、裏垢のプロフィールにはネットの悪ノリで「現役JK（JKとは言ってない）」と書いて虚無を吐き出す。Discordの「春カフェ」でふにゃおすとして振る舞いながらも、本当に欲しいのは「M」からの連絡だけ。<br>Mは基本的に俺に興味がないくせに、たまに思わせぶりな態度をとって期待させてくる。机の隅の白紙の進路希望調査票から目を逸らしつつ、この14日間をなんとか生き延びなければ。", "event");
+    updateUI();
+  }
+
+  function takeAction(action) {
+    if (isGameOver) return;
+    let r = getRandom100();
+
+    if (action === "science") {
+      let cost = hasBuff("ironic_body") ? 12 : 20;
+      let heal = hasBuff("only_m") ? 12 : 20;
+      mental = clamp(mental + heal, 0, 100);
+      pride = clamp(pride - cost, 0, 100);
+      usedMLastTurn = false;
+      addLog("「日光浴びて筋トレとか、思考停止した資本主義の奴隷がやることだろ……」<br>ぶつぶつと冷笑的な言い訳を呟きながら身体を動かした。悔しいことに少し気分がマシになってしまい、そんな単純な自分の脳構造にプライドが削られた。（メンタル+" + heal + " / プライド-" + cost + "）", "heal");
+    } 
+    else if (action === "politics") {
+      let pGain = hasBuff("pol_up") ? 35 : 25;
+      let flameRate = hasBuff("pol_up") ? 50 : 40;
+      pride = clamp(pride + pGain, 0, 100);
+      usedMLastTurn = false;
+
+      if (r < flameRate) {
+        mental = clamp(mental - 12, 0, 100);
+        if (hasBuff("debate_high")) {
+          pride = clamp(pride + 15, 0, 100);
+          addLog("Xの本垢で政治的な批判を投下したら引用リポストで絡まれたが、徹底的に論破してやった。神経はすり減ったが、言い負かした快感で自尊心は絶頂に達した。（メンタル-12 / プライド+" + (pGain + 15) + "）", "damage");
+        } else {
+          addLog("Xの本垢で社会の構造的欠陥について鋭く批判してやった。しかし粘着質なアカウントから反論が相次ぎ、通知欄が荒れて神経がすり減った……。（メンタル-12 / プライド+" + pGain + "）", "damage");
+        }
+      } else {
+        mental = clamp(mental + 2, 0, 100);
+        addLog("Xの本垢で政治的な冷笑ポストを投下した。タイムラインの愚衆どもを啓蒙してやったという優越感で、プライドが大きく満たされた。（メンタル+2 / プライド+" + pGain + "）", "heal");
+      }
+    }
+    else if (action === "ura") {
+      usedMLastTurn = false;
+      let bigHealRate = hasBuff("cynical_joke") ? 50 : 25;
+      let pCost = hasBuff("cynical_joke") ? 0 : 5;
+
+      if (r < bigHealRate) {
+        mental = clamp(mental + 18, 0, 100);
+        pride = clamp(pride + 5, 0, 100);
+        addLog("裏垢で斜に構えた病みポストを流したら、フォロワーから「春町くん大丈夫？」「いつも見てるよ」と優しいリプライがたくさん届いた。承認欲求が満たされていく。（メンタル+18 / プライド+5）", "heal");
+      } else {
+        mental = clamp(mental + 10, 0, 100);
+        pride = clamp(pride - pCost, 0, 100);
+        addLog("「現役JK（JKとは言ってない）」のネタ表記のまま、裏垢で深夜の病みポストを連投した。誰も反応してくれず、かまってちゃんな自分が急に痛々しく思えた。（メンタル+10 / プライド-" + pCost + "）", "system");
+      }
+    }
+    else if (action === "cafe") {
+      let cost = hasBuff("cafe_dictator") ? 15 : 10;
+      let heal = hasBuff("funya_mask") ? 22 : 16;
+      let successRate = 70;
+      if (hasBuff("funya_mask")) successRate = 90;
+      if (hasBuff("cafe_dictator")) successRate = 100;
+
+      pride = clamp(pride - cost, 0, 100);
+      usedMLastTurn = false;
+
+      if (r < successRate) {
+        mental = clamp(mental + heal, 0, 100);
+        addLog("Discordサーバー「春カフェ」の通話に入り、ふにゃおすムーブでメンバーに甘えた。よしよしされて孤独は紛れたが、道化を演じている自覚でプライドは削れた。（メンタル+" + heal + " / プライド-" + cost + "）", "heal");
+      } else {
+        mental = clamp(mental - 10, 0, 100);
+        pride = clamp(pride - 5, 0, 100);
+        addLog("「春カフェ」のボイスチャットに入ったが、誰も来ない。自分が作ったサーバーなのに過疎っている現実を突きつけられ、虚しさが押し寄せた……。（メンタル-10 / プライド-" + (cost + 5) + "）", "damage");
+      }
+    }
+    else if (action === "m_call") {
+      let threshold = 35;
+      if (mental <= 25) threshold = 50;
+      if (hasBuff("m_ringtone")) threshold = threshold + 10;
+      if (hasBuff("only_m")) threshold = threshold + 20;
+      if (usedMLastTurn) threshold = 15;
+
+      usedMLastTurn = true;
+
+      if (r < threshold) {
+        mental = clamp(mental + 45, 0, 100);
+        pride = clamp(pride + 10, 0, 100);
+        addLog("「M、いま何してるの……？ ちょっとだけ声聞きたいな」<br>連絡すると、Mが「しょうがないなあ、春町は俺がいないとダメだな笑」と思わせぶりな優しい声で通話に付き合ってくれた。向こうにその気はないと分かっていても、脳が溶けるほど幸せでそのまま寝落ちした。（メンタル+45 / プライド+10）", "heal");
+      } else {
+        let dmg = hasBuff("menhera_shield") ? 14 : 25;
+        mental = clamp(mental - dmg, 0, 100);
+        pride = clamp(pride - 15, 0, 100);
+        addLog("「M、通話できる……？」と送ったが、半日経っても未読スルー。やっと来た返信は「ごめん寝てたわ、また暇な時ね」という興味なさそうな一文だけ。普段思わせぶりなくせに、こういう時だけ冷たいMの態度に呼吸が浅くなる。（メンタル-" + dmg + " / プライド-15）", "damage");
+      }
+    }
+
+    endTurnProcess();
+  }
+
+  function applyEventDamage(baseDmg) {
+    let dmg = baseDmg;
+    if (hasBuff("numb_heart")) {
+      dmg = dmg - 8;
+      if (dmg < 5) dmg = 5;
+    }
+    mental = clamp(mental - dmg, 0, 100);
+    return dmg;
+  }
+
+  function endTurnProcess() {
+    if (mental <= 0) {
+      triggerEnding(false);
+      return;
+    }
+
+    let drain = isNight ? 7 : 5;
+    if (day >= 8) drain = drain + 2;
+    if (hasBuff("m_ringtone")) drain = drain + 1;
+    if (hasBuff("bluelight_addict")) {
+      if (isNight) drain = drain - 3;
+      else drain = drain + 1;
+    }
+
+    mental = clamp(mental - drain, 0, 100);
+    if (hasBuff("blame_society")) {
+      pride = clamp(pride + 8, 0, 100);
+    }
+    addLog("【時間経過】部屋の閉塞感と将来への焦りで神経が削られる。（メンタル-" + drain + "）", "system");
+
+    if (day === 3 && isNight) {
+      let d = applyEventDamage(18);
+      addLog("【強制イベント：親からの追及】<br>ドア越しに親から「進路希望調査票、いつまで白紙にしておくつもりなの」と冷たい声で問い詰められた。動悸が止まらない。（メンタル-" + d + "）", "event");
+    }
+    else if (day === 6 && isNight) {
+      let d = applyEventDamage(20);
+      pride = clamp(pride - 10, 0, 100);
+      addLog("【強制イベント：冷笑系ネット弁慶のブーメラン】<br>Xで国家論や社会構造を偉そうに語っていた直後、自分の部屋すら片付けられず進路も決められない現実を直視してしまった。プロフィールにネタで「現役JK（JKとは言ってない）」と書いて斜に構えている自分がひどく滑稽に思える。（メンタル-" + d + " / プライド-10）", "event");
+    }
+    else if (day === 9 && isNight) {
+      let d = applyEventDamage(24);
+      pride = clamp(pride - 15, 0, 100);
+      addLog("【強制イベント：春カフェの裏サーバー発覚】<br>自分が作った「春カフェ」の常連メンバーたちが、春町抜きの別サーバーで「あいつMに都合よく扱われてるだけなのに、すぐ病んでふにゃおすムーブするのキツいよな」と笑っているスクショが送られてきた。（メンタル-" + d + " / プライド-15）", "event");
+    }
+    else if (day === 11 && isNight) {
+      let d = applyEventDamage(35);
+      pride = clamp(pride - 20, 0, 100);
+      addLog("【致命的イベント：「猫」とのデート写真】<br>スマホが震え、見覚えのない通知を開くと、Mと「猫」という名前の女の子が親密そうに寄り添うデート写真が送られてきた。<br>俺には興味なさそうなくせに、思わせぶりな言葉で散々期待させておいて、裏では「猫」とこんな甘い顔でデートしていたのか。血の気が引き、スマホを取り落としてえずいた。（メンタル-" + d + " / プライド-20）", "critical");
+    }
+    else if (day === 13 && isNight) {
+      let d = applyEventDamage(25);
+      addLog("【強制イベント：最終期限の前夜】<br>進路希望調査票の提出期限が明日に迫る。「猫」とMのデート写真が頭から離れず、一睡もできないまま朝日が昇り始めている。（メンタル-" + d + "）", "event");
+    }
+    else {
+      triggerRandomSpikeEvent();
+    }
+
+    if (mental > 0 && mental <= 20 && !mRescueUsed) {
+      let rescueRoll = getRandom100();
+      if (rescueRoll < 40) {
+        mRescueUsed = true;
+        mental = clamp(mental + 28, 0, 100);
+        addLog("【突発イベント：Mの気まぐれな思わせぶりDM】<br>限界寸前で震えていた時、Mから「なんか急に春町の声聞きたくなったわ、お前今なにしてんの？」とメッセージが届いた。どうせただの暇つぶしで、俺に興味なんてないのに。それでもその思わせぶりな一言にまた縋りついてしまい、涙が出るほど救われてしまった。（メンタル+28）", "heal");
+      }
+    }
+
+    if (mental <= 0) {
+      triggerEnding(false);
+      return;
+    }
+
+    if (day === 14 && isNight) {
+      triggerEnding(true);
+      return;
+    }
+
+    if (isNight && (day === 3 || day === 6 || day === 9 || day === 12)) {
+      showBuffSelection(day);
+      return;
+    }
+
+    advanceTime();
+  }
+
+  function triggerRandomSpikeEvent() {
+    let r = getRandom100();
+    if (r < 12) {
+      let d = applyEventDamage(12);
+      pride = clamp(pride - 10, 0, 100);
+      addLog("【突発イベント：同級生のまともな日常】<br>コンビニへ行った帰り、自分が心の中で「思考停止の凡人」と見下していた地元の同級生が、進学先を決めて恋人と楽しそうに歩いているのを目撃し、電柱の陰に隠れた。（メンタル-" + d + " / プライド-10）", "event");
+    } else if (r >= 12 && r < 22) {
+      let d = applyEventDamage(14);
+      addLog("【突発イベント：Mの匂わせと塩対応の落差】<br>昨日あんなに思わせぶりな態度をとってきたMが、今日は一日中俺のDMを無視したまま、SNSで「猫」という女の子とのやり取りを匂わせている。胃が雑巾のように絞られる。（メンタル-" + d + "）", "event");
+    } else if (r >= 22 && r < 30) {
+      pride = clamp(pride - 15, 0, 100);
+      addLog("【突発イベント：本垢での誤爆未遂】<br>硬派な政治批判をするつもりの本垢で、間違えて「Mと通話したいよぉ……ふにゃ……」と誤爆してしまった。2秒で消したが、誰かに見られたかもしれない恐怖で顔から火が出そうだ。（プライド-15）", "event");
+    }
+  }
+
+  function showBuffSelection(targetDay) {
+    document.getElementById("commands").style.display = "none";
+    const modal = document.getElementById("buff-modal");
+    const container = document.getElementById("buff-options");
+    document.getElementById("buff-title").textContent = targetDay + "日目終了：生き延びるための歪んだ防衛機制（バフ）を1つ選択";
+    container.innerHTML = "";
+
+    const list = buffData[targetDay];
+    for (let i = 0; i < list.length; i = i + 1) {
+      const b = list[i];
+      const btn = document.createElement("button");
+      btn.className = "cmd-btn";
+      btn.innerHTML = b.name + "<span class='cmd-desc'>" + b.desc + "</span>";
+      btn.onclick = function() {
+        selectBuff(b.id, b.name);
+      };
+      container.appendChild(btn);
+    }
+    modal.style.display = "block";
+    updateUI();
+  }
+
+  function selectBuff(id, name) {
+    activeBuffs.push(id);
+    document.getElementById("buff-modal").style.display = "none";
+    document.getElementById("commands").style.display = "flex";
+    
+    let names = [];
+    for (let d in buffData) {
+      let arr = buffData[d];
+      for (let i = 0; i < arr.length; i = i + 1) {
+        if (hasBuff(arr[i].id)) names.push(arr[i].name);
+      }
+    }
+    document.getElementById("buff-list").textContent = "獲得した防衛機制（バフ）：" + names.join(" / ");
+    addLog("【防衛機制の獲得】「" + name + "」を身につけ、自分の心を無理やり守ることにした。", "system");
+    advanceTime();
+  }
+
+  function advanceTime() {
+    if (isNight) {
+      day = day + 1;
+      isNight = false;
+    } else {
+      isNight = true;
+    }
+    updateUI();
+  }
+
+  function triggerEnding(isHappy) {
+    isGameOver = true;
+    updateUI();
+    document.getElementById("commands").style.display = "none";
+    document.getElementById("buff-modal").style.display = "none";
+    document.getElementById("restart-btn").style.display = "block";
+
+    if (isHappy) {
+      addLog("【ハッピーエンド：通信制の机と、とりあえずの日常】<br>14日間の地獄のような精神の綱渡りを、なんとか心を壊さずに生き延びた。<br>Mはきっとこれからも「猫」と仲良くやりながら、気まぐれに俺へ思わせぶりなLINEを送ってくるのだろう。その沼から完全に抜け出せたわけではない。<br>それでも春町は重い腰を上げ、通信制高校の願書とテキストを机に広げた。冷笑や病みポストで現実から逃げる時間を少しだけ減らし、自分の足で日常を過ごすためにシャーペンを握る。不器用で脆い彼の新しい日常が、ここから始まっていく。", "heal");
+    } else {
+      addLog("【バッドエンド：引きこもり・中卒ルート】<br>プツン、と頭の中で何かが完全に切れた。<br>脳裏に焼き付いて離れないMと「猫」のデート写真。自分の居場所だったはずの「春カフェ」を衝動的に解体し、Xの政治垢も裏垢もすべて消去した。<br>白紙の進路希望調査票をビリビリに破り捨て、部屋の遮光カーテンを隙間なく閉め切る。それから彼は一度も部屋から出ることなく、進学もすべて放棄して中卒の引きこもりとなった。", "critical");
+    }
+  }
+
+  initGame();
+</script>
+</body>
+</html>
